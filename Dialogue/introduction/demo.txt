@@ -1,0 +1,8 @@
+. This is the first introduction text [forward]
+.. This is the next text [next]
+... This would be a branching dialogue path [left|right]
+    ...1 This would be the path were you to take the first dialogue option [next]
+        ...1. This is a jump to a different dialogue path [next(...2.)]
+    ...2 This would be the path were you to take the second dialogue option [next]
+        ...2. The two previous paths converge onto this path because of how the game is created [next]
+        ...2.. Onward and upward [done!]
