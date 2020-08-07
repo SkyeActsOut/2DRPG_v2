@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=2]
+
+[ext_resource path="res://Assets/Dnynamic_Font/Cello-Sans-Italic.tres" type="DynamicFont" id=1]
+[ext_resource path="res://Scripts/Option.gd" type="Script" id=2]
+
+[node name="Container" type="MarginContainer"]
+margin_right = 40.0
+margin_bottom = 40.0
+script = ExtResource( 2 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Text" type="Label" parent="."]
+margin_top = 5.0
+margin_right = 179.0
+margin_bottom = 35.0
+custom_fonts/font = ExtResource( 1 )
+text = "This is an option"
+[connection signal="gui_input" from="." to="." method="_on_Container_gui_input"]
