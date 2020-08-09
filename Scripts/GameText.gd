@@ -3,8 +3,10 @@ extends Node
 var displayIndex = 0
 var startTime
 var elapsedTime = 0
+var cooldowns = {}
+var pause = 0
 
-var globalTextSpeed = 0.100
+var globalTextSpeed = 0.0125
 
 var Levels;
 var Introduction;
@@ -14,10 +16,26 @@ var currLevel;
 var currScript;
 var currLine;
 
+onready var OptionsNode = $'../../UIContainer/HBox/Options'
+onready var SanityNode = $'../../UIContainer/HBox/StatusBars/Sanity/Bar'
+
+# A dictionary of all the individual reputations the player can have
+# Your overall / general reputation is simply gen
+var reputation = { 
+	"gen": 50
+} 
+
+var sanDec = 0;
+var globalDecSpeed = 0.25
+var sanity = 100; # The players sanity
+
 var Option = preload ("res://Scenes/Option.tscn")
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
+	cooldowns[globalTextSpeed] = -1
+	cooldowns[globalDecSpeed] = -1
+	
 	Levels = list_files_in_directory("res://Dialogue/")
 	currLevel = list_files_in_directory(str("res://Dialogue/", Levels[currLevelNum]))
 	currScript = load_script(str("res://Dialogue/", Levels[currLevelNum], "/", currLevel[currScriptNum]))
@@ -27,14 +45,56 @@ func _ready():
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
-	DrawText(currScript.get(currLine)[0], delta)
+	elapsedTime += delta
+	DrawText(currScript.get(currLine)[0])
+	ModSanity()
+
+func GetInverval (speed):
+	var currTime = stepify(elapsedTime, speed)
+	if (pause <= 0):
+		if (currTime == cooldowns[speed]):
+			return false
+		else:
+			cooldowns[speed] = currTime
+			return true
+	else:
+		pause -= globalTextSpeed
+		return false
 
 # Draws Text to the screen
-func DrawText (s, delta):
-	elapsedTime += delta
-	if (fmod(int(elapsedTime), globalTextSpeed) == 0 && displayIndex < s.length()):
+func DrawText (s):
+	# Checks puncuation
+	if (GetInverval (globalTextSpeed) && displayIndex < s.length()): # Only draws text on intervals of 0.125 seconds
 		displayIndex+=1
 	get_parent().get_node("GameText").set_text (s.substr(0, displayIndex))
+	if (pause <= 0 && isPunctuation (s.substr(0, displayIndex), s.length())):
+		pause = 0.625
+
+func isPunctuation (s, slen):
+	print (s.rfind ("!"))
+	print (s.length())
+	if (s.length() != slen && s.length() != 0):
+		return (
+				s.rfind (".") == s.length() - 1 || 
+				s.rfind ("!") == s.length() - 1 || 
+				s.rfind ("?") == s.length() - 1 ||
+				s.rfind (",") == s.length() - 1
+			)
+	return false
+
+# Decreases sanity over time if sanDec is not 0
+func ModSanity():
+	if (GetInverval(globalDecSpeed)):
+		if (sanDec < 0):
+			sanity -= 0.5
+			sanDec += 0.5
+			print (sanDec)
+		elif (sanDec > 0):
+			sanity += 1
+			sanDec -= 1
+			print (sanDec)
+		if (sanDec != 0):
+			SanityNode.value = sanity
 
 # Creates the options nodes
 func SetOptions ():
@@ -46,35 +106,45 @@ func SetOptions ():
 			var option_node = Option.instance()
 			option_node.option_text = option
 			option_node.lead = i
-			$'../../OptionsContainer/VBox'.add_child(option_node);
+			OptionsNode.add_child(option_node);
 			i+=1
 	else:
 		var option_node = Option.instance()
 		option_node.option_text = options[0]
-		$'../../OptionsContainer/VBox'.add_child(option_node);
+		OptionsNode.add_child(option_node);
 
 # Clears all the nodes in the options
 func ClearOptions ():
-	for node in $'../../OptionsContainer/VBox'.get_children():
-		 $'../../OptionsContainer/VBox'.remove_child(node)
+	for node in OptionsNode.get_children():
+		 OptionsNode.remove_child(node)
 
 # Goes to the next line based of the lead
 func NextLine (lead):
-	currLine += str(lead)
-	displayIndex = 0;
-	elapsedTime = 0;
-	ClearOptions()
-	SetOptions()
-	yield(get_tree().create_timer(1), "timeout")
-
+	if (pause <= 0):
+		currLine += str(lead)
+		displayIndex = 0;
+#		elapsedTime = 0;
+		ClearOptions()
+		SetOptions()
+		yield(get_tree().create_timer(1), "timeout")
+		
 # Jumps to a specific line
 func JumpLine (jump):
-	currLine = jump
-	displayIndex = 0;
-	elapsedTime = 0;
-	ClearOptions()
-	SetOptions()
-	yield(get_tree().create_timer(1), "timeout")
+	if (pause <= 0):
+		currLine = jump
+		displayIndex = 0;
+#		elapsedTime = 0;
+		ClearOptions()
+		SetOptions()
+		yield(get_tree().create_timer(1), "timeout")
+
+func ChangeRep (rep, amount):
+	print (str("Changing rep of type ", rep, " by ", amount))
+	reputation[rep] += amount
+func ChangeSan (amount):
+	print (str("Changing Sanity by ", amount))
+	sanDec += amount
+#	SanityNode.value += amount
 
 # https://godotengine.org/qa/5175/how-to-get-all-the-files-inside-a-folder
 # Loads all of the dialogues in the /Dialogue folder
@@ -117,5 +187,4 @@ func load_script(file):
 
 # Strips the tabs from the start of a line of dialogue
 func StripTab (s):
-#	return s
 	return s.substr (s.find("."))
