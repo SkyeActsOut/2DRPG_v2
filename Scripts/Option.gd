@@ -1,11 +1,14 @@
 extends MarginContainer
 
 var option_text = ""
+var text_args = ""
 var lead = "."
 var jump = ""
 var repType = "none"
 var repMod = 0
 var sanityMod = 0
+var soundFile = "none"
+var clicked = false
 
 onready var GameTextNode = $"../../../../GameTextContainer/GameText"
 
@@ -37,7 +40,6 @@ func _ready():
 					mod = 1
 				repType = repArgs[0]
 				repMod = int(repArgs[1])
-	print (str (option_text, " | ", lead))
 
 # Runs when the player left clicks on the option
 func _on_Container_gui_input(event):
