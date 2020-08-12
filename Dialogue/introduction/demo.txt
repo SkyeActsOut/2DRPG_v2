@@ -8,4 +8,4 @@
         ...1... Okay, we're going back to the original path were you to take the right route. For your sake I'll be playing cat noises while this text runs, imagine its my wonderful voice! ["Okay..."(...2.)] -a
     ...2 This is the path are you to go the right route. The next text is a convergence of the two previous paths. [continue]
         ...2. Whether by going the right route, or by going the left (wrong) route, you ended up here at the end of this little demo! [Celebrate]
-        ...2.. Now, get your head out of the water and play the game! [continue]
+        ...2.. Now, get your head out of the water and play the game! [continue(jmp>0/demo/.)]

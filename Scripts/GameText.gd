@@ -42,11 +42,23 @@ func _ready():
 	cooldowns[globalDecSpeed] = -1
 	
 	Levels = list_files_in_directory("res://Dialogue/")
-	currLevel = list_files_in_directory(str("res://Dialogue/", Levels[currLevelNum]))
-	currScript = load_script(str("res://Dialogue/", Levels[currLevelNum], "/", currLevel[currScriptNum]))
+	SetScript ()
 	print (currScript)
 	currLine = "."
 	SetOptions ()
+	
+func SetScript ():
+	currLevel = list_files_in_directory(str("res://Dialogue/", Levels[currLevelNum]))
+	currScript = load_script(str("res://Dialogue/", Levels[currLevelNum], "/", currLevel[currScriptNum]))
+
+func GetScriptNum (s):
+	var i = 0
+	for level in currLevel:
+		if (level == s):
+			return i
+		else:
+			i+=1
+	return -1
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
@@ -152,6 +164,19 @@ func NextLine (lead):
 func JumpLine (jump):
 	if (pause <= 0):
 		currLine = jump
+		displayIndex = 0;
+#		elapsedTime = 0;
+		ClearOptions()
+		SetOptions()
+		Audio.stop()
+		yield(get_tree().create_timer(1), "timeout")
+		RunArgs()
+
+func JumpFile (jump):
+	if (pause <= 0):
+		currLevelNum = jump[0]
+		currScriptNum = GetScriptNum(jump[1])
+		currLine = jump[2]
 		displayIndex = 0;
 #		elapsedTime = 0;
 		ClearOptions()
