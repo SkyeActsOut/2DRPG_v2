@@ -1,12 +1,17 @@
-[gd_scene load_steps=6 format=2]
+[gd_scene load_steps=7 format=2]
 
 [ext_resource path="res://Assets/Dnynamic_Font/Cello-Sans-Italic.tres" type="DynamicFont" id=1]
 [ext_resource path="res://Scripts/GameText.gd" type="Script" id=2]
 [ext_resource path="res://Assets/Textures/SanityUnder.png" type="Texture" id=3]
 [ext_resource path="res://Assets/Textures/SanityProgress.png" type="Texture" id=4]
 [ext_resource path="res://Assets/Dnynamic_Font/Cello-Sans-Italic_Large.tres" type="DynamicFont" id=5]
+[ext_resource path="res://Assets/Backgrounds/Background.png" type="Texture" id=6]
 
 [node name="Game" type="Node2D"]
+
+[node name="Background" type="Sprite" parent="."]
+position = Vector2( 960, 540 )
+texture = ExtResource( 6 )
 
 [node name="MainField" type="MarginContainer" parent="."]
 margin_right = 1920.0
@@ -137,4 +142,8 @@ margin_right = 1920.0
 margin_bottom = 1080.0
 rect_min_size = Vector2( 100, 100 )
 
-[node name="Audio" type="AudioStreamPlayer" parent="."]
+[node name="TextStream" type="AudioStreamPlayer" parent="."]
+
+[node name="VOStream" type="AudioStreamPlayer" parent="."]
+
+[node name="BGMStream" type="AudioStreamPlayer" parent="."]

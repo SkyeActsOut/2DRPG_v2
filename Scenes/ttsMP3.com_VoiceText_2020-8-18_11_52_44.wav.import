@@ -1,0 +1,21 @@
+[remap]
+
+importer="wav"
+type="AudioStreamSample"
+path="res://.import/ttsMP3.com_VoiceText_2020-8-18_11_52_44.wav-148a2a9d71ec7e8eb1cfb11c15e2e543.sample"
+
+[deps]
+
+source_file="res://Scenes/ttsMP3.com_VoiceText_2020-8-18_11_52_44.wav"
+dest_files=[ "res://.import/ttsMP3.com_VoiceText_2020-8-18_11_52_44.wav-148a2a9d71ec7e8eb1cfb11c15e2e543.sample" ]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop=false
+compress/mode=0

@@ -9,7 +9,7 @@ var elapsedTime = 0
 var cooldowns = {}
 var pause = 0
 
-var globalTextSpeed = 0.0125
+var globalTextSpeed = 0.025
 
 var Levels;
 var Introduction;
@@ -19,9 +19,14 @@ var currLevel;
 var currScript;
 var currLine;
 
-onready var Audio = $"/root/Game/Audio"
+onready var BGMStream = $"/root/Game/BGMStream"
+onready var VOStream = $"/root/Game/VOStream"
 onready var OptionsNode = $'../../UIContainer/HBox/Options'
 onready var SanityNode = $'../../UIContainer/HBox/StatusBars/Sanity/Bar'
+
+var voPath = ""
+var voIndex = 0
+var isVO = false
 
 # A dictionary of all the individual reputations the player can have
 # Your overall / general reputation is simply gen
@@ -49,40 +54,68 @@ func _ready():
 	
 func SetScript ():
 	currLevel = list_files_in_directory(str("res://Dialogue/", Levels[currLevelNum]))
+	print (currLevel)
 	currScript = load_script(str("res://Dialogue/", Levels[currLevelNum], "/", currLevel[currScriptNum]))
 
 func GetScriptNum (s):
 	var i = 0
 	for level in currLevel:
-		if (level == s):
+		if (level == str(s, textExtension)):
 			return i
-		else:
-			i+=1
+		i+=1
 	return -1
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
 	elapsedTime += delta
 	DrawText(currScript.get(currLine)[0])
+	if (isVO && displayIndex == voIndex):
+		PlayVO(voPath)
 	ModSanity()
 
+# runs the line-specific arguments
 func RunArgs():
 	var args = currScript.get(currLine)[2]
 	if (args.length() >= 1):
 		for arg in args.split (' '):
-			print (arg.substr(0, 2))
-			if (arg.substr(0, 2) == "-a"):
-				PlayAudio ()
+			# The audio argument
+			if (arg.substr(0, 2) == "-a"): # -a(vo5)
+				var aArgs = ""
+				if (arg.split('(').size() > 1):
+					aArgs = arg.split('(')[1].split(')')[0]
+				var lineToPath = currLine.replace (".", "0")
+				if (aArgs.split(':').size() > 1):
+					var filePath = str("res://Audio/", Levels[currLevelNum], "/", currLevel[currScriptNum].split(textExtension)[0], "/", lineToPath, "_VO", audioExtension)
+					var i = int(aArgs.split(':')[1]) - currLine.length()
+					SetVO(filePath, i)
+				else:
+					var filePath = str("res://Audio/", Levels[currLevelNum], "/", currLevel[currScriptNum].split(textExtension)[0], "/", lineToPath, audioExtension)
+					PlayAudio (filePath)
 
-func PlayAudio():
-	var lineToPath = currLine.replace (".", "0")
-	var filePath = str("res://Audio/", Levels[currLevelNum], "/", currLevel[currScriptNum].split(textExtension)[0], "/", lineToPath, audioExtension)
-	print (filePath)
-	Audio.set_stream(load(filePath))
-	Audio.volume_db = 1
-	Audio.pitch_scale = 1
-	Audio.play()
+func PlayAudio(path):
+	BGMStream.set_stream(load(path))
+#	BGMStream.volume_db = 1
+#	BGMStream.pitch_scale = 1
+	BGMStream.play()
+
+func SetVO (path, i):
+	voPath = path
+	voIndex = int(i)
+	isVO = true
 	
+func PlayVO(path):
+	isVO = false
+	print (path)
+	VOStream.set_stream(load(path))
+#	VOStream.volume_db = 1
+#	VOStream.pitch_scale = 1
+	VOStream.play()
+	print ("Played!")
+
+func StopAllAudio():
+#	VOStream.stop()
+#	BGMStream.stop()
+	pass
 
 func GetInverval (speed):
 	var currTime = stepify(elapsedTime, speed)
@@ -100,7 +133,9 @@ func GetInverval (speed):
 func DrawText (s):
 	if (GetInverval (globalTextSpeed) && displayIndex < s.length()): # Only draws text on intervals of 0.125 seconds
 		displayIndex+=1
-	get_parent().get_node("GameText").set_text (s.substr(0, displayIndex))
+		if (s.substr(displayIndex-1, displayIndex+1) == "\n"): # If there is a line break, add one to displayIndex to not have the \ appear
+			displayIndex+=1
+	get_parent().get_node("GameText").set_text (tr(s.substr(0, displayIndex)).c_unescape()) # c_unescape allows linebreaks to function properly
 	if (pause <= 0 && isPunctuation (s.substr(0, displayIndex), s.length())):
 		pause = 0.625
 
@@ -110,7 +145,9 @@ func isPunctuation (s, slen):
 				s.rfind (".") == s.length() - 1 || 
 				s.rfind ("!") == s.length() - 1 || 
 				s.rfind ("?") == s.length() - 1 ||
-				s.rfind (",") == s.length() - 1
+				s.rfind (",") == s.length() - 1 ||
+				s.rfind (";") == s.length() - 1 ||
+				s.rfind ('"') == s.length() - 1
 			)
 	return false
 
@@ -135,7 +172,11 @@ func SetOptions ():
 		for option in options:
 			var option_node = Option.instance()
 			option_node.option_text = option
-			option_node.lead = i
+			# If there is a (dl) after the option, keep the default lead, otherwise give a numbered lead
+			if (option.split('(').size() > 1 && option.split('(')[1].substr(0, 2) == 'dl'):
+				option_node.lead = '.'
+			else:
+				option_node.lead = i
 			OptionsNode.add_child(option_node);
 			i+=1
 	else: # If only one option, keep the default lead
@@ -156,7 +197,7 @@ func NextLine (lead):
 #		elapsedTime = 0;
 		ClearOptions()
 		SetOptions()
-		Audio.stop()
+		StopAllAudio()
 		yield(get_tree().create_timer(1), "timeout")
 		RunArgs()
 		
@@ -168,20 +209,21 @@ func JumpLine (jump):
 #		elapsedTime = 0;
 		ClearOptions()
 		SetOptions()
-		Audio.stop()
+		StopAllAudio()
 		yield(get_tree().create_timer(1), "timeout")
 		RunArgs()
 
 func JumpFile (jump):
 	if (pause <= 0):
-		currLevelNum = jump[0]
+		currLevelNum = int(jump[0])
 		currScriptNum = GetScriptNum(jump[1])
+		SetScript()
 		currLine = jump[2]
 		displayIndex = 0;
 #		elapsedTime = 0;
 		ClearOptions()
 		SetOptions()
-		Audio.stop()
+		StopAllAudio()
 		yield(get_tree().create_timer(1), "timeout")
 		RunArgs()
 
@@ -209,6 +251,8 @@ func list_files_in_directory(path):
 			files.append(file)
 
 	dir.list_dir_end()
+	
+	files.sort()
 
 	return files
 
@@ -223,17 +267,20 @@ func load_script(file):
 		var line = f.get_line() # a string for the indivudual line
 		if (line.substr(0, 1) == "#"): # If a # is found at the start, skip the line since its a comment line
 			continue
+		elif (line.rfind ('[') == -1): # Skips blank lines
+			continue
+		var options = line.split('[')[1].split(']')[0]
 		var splitLine = StripTab(line).split(' ') # A split by ' '
 		var addr = splitLine[0] # The address of the individual line of text
 		var text = StripTab(line).split(' ') # The actual dialogue text to be displayed on screen
 		text.remove(0) # Removes the address
 		var cut = 1; # How much to cut off the end to get the line of dialogue
+		var opSize = options.split(" ").size()
 		if (line.rfind ("-a") != -1): # If the audio argument is found, add one to cut
 			cut += 1
-		for i in range (0, cut):
+		for i in range (0, cut + opSize - 1):
 			text.remove(text.size() - 1) # Removes the options and arguments
 		text = text.join(' ') # Joins the text
-		var options = line.split('[')[1].split(']')[0]
 		# For however many arguments exist, add them to the arguments string
 		var args = ""
 		if (cut != 1):
