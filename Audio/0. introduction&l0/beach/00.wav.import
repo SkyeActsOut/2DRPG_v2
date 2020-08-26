@@ -1,0 +1,21 @@
+[remap]
+
+importer="wav"
+type="AudioStreamSample"
+path="res://.import/00.wav-21916d689373e9156a3c1f7d9c5b4d06.sample"
+
+[deps]
+
+source_file="res://Audio/0. introduction&l0/beach/00.wav"
+dest_files=[ "res://.import/00.wav-21916d689373e9156a3c1f7d9c5b4d06.sample" ]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop=false
+compress/mode=0

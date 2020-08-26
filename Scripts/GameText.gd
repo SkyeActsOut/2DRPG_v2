@@ -13,7 +13,7 @@ var globalTextSpeed = 0.025
 
 var Levels;
 var Introduction;
-var currScriptNum = 0;
+var currScriptNum = 1;
 var currLevelNum = 0;
 var currLevel;
 var currScript;
@@ -21,12 +21,15 @@ var currLine;
 
 onready var BGMStream = $"/root/Game/BGMStream"
 onready var VOStream = $"/root/Game/VOStream"
+onready var TextStream = $"/root/Game/TextStream"
 onready var OptionsNode = $'../../UIContainer/HBox/Options'
 onready var SanityNode = $'../../UIContainer/HBox/StatusBars/Sanity/Bar'
 
 var voPath = ""
 var voIndex = 0
 var isVO = false
+
+var StopAudio
 
 # A dictionary of all the individual reputations the player can have
 # Your overall / general reputation is simply gen
@@ -51,6 +54,7 @@ func _ready():
 	print (currScript)
 	currLine = "."
 	SetOptions ()
+	RunArgs()
 	
 func SetScript ():
 	currLevel = list_files_in_directory(str("res://Dialogue/", Levels[currLevelNum]))
@@ -78,24 +82,34 @@ func RunArgs():
 	var args = currScript.get(currLine)[2]
 	if (args.length() >= 1):
 		for arg in args.split (' '):
-			# The audio argument
+			# The audio argument for a specific line
 			if (arg.substr(0, 2) == "-a"): # -a(vo5)
 				var aArgs = ""
 				if (arg.split('(').size() > 1):
 					aArgs = arg.split('(')[1].split(')')[0]
 				var lineToPath = currLine.replace (".", "0")
-				if (aArgs.split(':').size() > 1):
-					var filePath = str("res://Audio/", Levels[currLevelNum], "/", currLevel[currScriptNum].split(textExtension)[0], "/", lineToPath, "_VO", audioExtension)
-					var i = int(aArgs.split(':')[1]) - currLine.length()
-					SetVO(filePath, i)
+				if (aArgs.length() > 0):
+					# Checks to see if there is a specific VO line
+					if (aArgs.split(':').size() > 1):
+						var filePath = str("res://Audio/", Levels[currLevelNum], "/", currLevel[currScriptNum].split(textExtension)[0], "/", lineToPath, "_VO", audioExtension)
+						var i = int(aArgs.split(':')[1]) - currLine.length()
+						SetVO(filePath, i)
+					# Checks to see if it should start continuous audio
+					elif (aArgs.substr(0, 1) == 'c'):
+						var filePath = str("res://Audio/", Levels[currLevelNum], "/", currLevel[currScriptNum].split(textExtension)[0], "/", lineToPath, audioExtension)
+						PlayAudio (filePath)
+						StopAudio = false
+					# Checks to see if audio should be stopped upon next line or not
+					elif (aArgs.substr(0,1) == 's'):
+						StopAudio = true
 				else:
 					var filePath = str("res://Audio/", Levels[currLevelNum], "/", currLevel[currScriptNum].split(textExtension)[0], "/", lineToPath, audioExtension)
 					PlayAudio (filePath)
 
 func PlayAudio(path):
 	BGMStream.set_stream(load(path))
-#	BGMStream.volume_db = 1
-#	BGMStream.pitch_scale = 1
+	BGMStream.volume_db = 1
+	BGMStream.pitch_scale = 1
 	BGMStream.play()
 
 func SetVO (path, i):
@@ -112,10 +126,15 @@ func PlayVO(path):
 	VOStream.play()
 	print ("Played!")
 
+func TextAudio ():
+	TextStream.play()
+
 func StopAllAudio():
-#	VOStream.stop()
-#	BGMStream.stop()
-	pass
+	if (StopAudio):
+		BGMStream.stop()
+		VOStream.stop()
+	else:
+		pass
 
 func GetInverval (speed):
 	var currTime = stepify(elapsedTime, speed)
@@ -133,6 +152,9 @@ func GetInverval (speed):
 func DrawText (s):
 	if (GetInverval (globalTextSpeed) && displayIndex < s.length()): # Only draws text on intervals of 0.125 seconds
 		displayIndex+=1
+		# Plays the typewriter sound effect every x indecies, or whenever there is punctuation.
+		if (displayIndex % 4 == 0 ||  isPunctuation (s.substr(0, displayIndex), s.length())):
+			TextAudio()
 		if (s.substr(displayIndex-1, displayIndex+1) == "\n"): # If there is a line break, add one to displayIndex to not have the \ appear
 			displayIndex+=1
 	get_parent().get_node("GameText").set_text (tr(s.substr(0, displayIndex)).c_unescape()) # c_unescape allows linebreaks to function properly
